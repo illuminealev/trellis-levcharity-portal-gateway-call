@@ -1,4 +1,16 @@
 ---
+- name: Debug all available site_env variables
+  debug:
+    var: site_env
+  when: site_env is defined
+
+- name: Debug vault variables directly
+  debug:
+    msg:
+      - "vault_wordpress_sites defined: {{ vault_wordpress_sites is defined }}"
+      - "site variable: {{ site | default('NOT_DEFINED') }}"
+      - "vault_wordpress_sites[site] defined: {{ vault_wordpress_sites[site] is defined if vault_wordpress_sites is defined else 'vault_wordpress_sites not defined' }}"
+
 - name: Debug site environment variables
   debug:
     msg:
