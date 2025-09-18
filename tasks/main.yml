@@ -69,7 +69,7 @@
 
 - name: Build validation list for each key
   set_fact:
-    validations_list: "{{ validations_list + [{'key': item, 'value': site_env[item | upper] | default('')}] }}"
+    validations_list: "{{ validations_list + [{'key': item, 'value': site_env[item] | default('')}] }}"
   loop: "{{ project_keys }}"
 
 - name: Build validation payload
