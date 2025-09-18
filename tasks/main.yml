@@ -63,38 +63,42 @@
     msg: "Failed to get project keys from LevCharity Portal API"
   when: project_keys is not defined or project_keys | length == 0
 
-- name: Debug key validation for each key
-  debug:
-    msg:
-      - "Validating key: {{ item }}"
-      - "Looking up value from environment variable: {{ item | upper }}"
-      - "Value found: {{ site_env[item | upper] | default('NOT_FOUND') }}"
+- name: Build validation payload for all keys
+  set_fact:
+    validation_payload:
+      validations: "{{ validation_list }}"
+  vars:
+    validation_list: >-
+      [
+      {% for key in project_keys %}
+      {
+        "key": "{{ key }}",
+        "value": "{{ site_env[key | upper] | default('') }}"
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+      ]
 
-- name: Validate each project key individually
+- name: Validate all project keys in single API call
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['levcharity_portal_api_client_id_' + env] }}/validate"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['levcharity_portal_api_client_id_' + env] }}/validate/all"
     method: POST
     headers:
       Accept: "application/json"
       Content-Type: "application/json"
       Authorization: "Bearer {{ access_token }}"
     body_format: json
-    body:
-      key: "{{ item }}"
-      value: "{{ site_env[item | upper] | default('') }}"
+    body: "{{ validation_payload }}"
     status_code: 200
     timeout: 30
   register: validation_result
   retries: 3
   delay: 5
   failed_when: validation_result.status != 200
-  loop: "{{ project_keys }}"
 
-- name: Check validation result for each key
+- name: Check validation result
   fail:
-    msg: "Key validation failed for '{{ item.item }}'. Response: {{ item.json | default('No response data') }}"
-  when: item.json.status != "success"
-  loop: "{{ validation_result.results }}"
+    msg: "Keys validation failed. Response: {{ validation_result.json | default('No response data') }}"
+  when: validation_result.json.status | default('') != "success"
 
 - name: Display successful validation message
   debug:
