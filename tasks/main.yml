@@ -1,31 +1,8 @@
 ---
-- name: Debug all available site_env variables
-  debug:
-    var: site_env
-  when: site_env is defined
-
-- name: Debug vault variables directly
-  debug:
-    msg:
-      - "vault_wordpress_sites defined: {{ vault_wordpress_sites is defined }}"
-      - "site variable: {{ site | default('NOT_DEFINED') }}"
-      - "vault_wordpress_sites[site] defined: {{ vault_wordpress_sites[site] is defined if vault_wordpress_sites is defined else 'vault_wordpress_sites not defined' }}"
-
-- name: Debug site environment variables
-  debug:
-    msg:
-      - "Environment: {{ env }}"
-      - "Email var: LEVCHARITY_PORTAL_API_CLIENT_EMAIL_{{ env | upper }}"
-      - "Password var: LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_{{ env | upper }}"
-      - "Project ID var: LEVCHARITY_PORTAL_API_CLIENT_ID_{{ env | upper }}"
-      - "Email value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] | default('NOT_SET') }}"
-      - "Password value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] | default('NOT_SET') }}"
-      - "Project ID value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] | default('NOT_SET') }}"
-
 - name: Check if required environment variables are set
   fail:
-    msg: "Required environment variable 'LEVCHARITY_PORTAL_API_CLIENT_{{ item | upper }}_{{ env | upper }}' is not set for environment '{{ env }}'"
-  when: site_env['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] is not defined or site_env['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] == ""
+    msg: "Required environment variable 'levcharity_portal_api_client_{{ item }}_{{ env }}' is not set for environment '{{ env }}'"
+  when: site_env['levcharity_portal_api_client_' + item + '_' + env] is not defined or site_env['levcharity_portal_api_client_' + item + '_' + env] == ""
   loop:
     - "email"
     - "password"
@@ -40,8 +17,8 @@
       Content-Type: "application/json"
     body_format: json
     body:
-      email: "{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] }}"
-      password: "{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] }}"
+      email: "{{ site_env['levcharity_portal_api_client_email_' + env] }}"
+      password: "{{ site_env['levcharity_portal_api_client_password_' + env] }}"
     status_code: 200
     timeout: 30
   register: auth_result
@@ -65,7 +42,7 @@
 
 - name: Get project keys from LevCharity Portal API
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['levcharity_portal_api_client_id_' + env] }}"
     method: GET
     headers:
       Accept: "application/json"
@@ -95,7 +72,7 @@
 
 - name: Validate each project key individually
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}/validate"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['levcharity_portal_api_client_id_' + env] }}/validate"
     method: POST
     headers:
       Accept: "application/json"
