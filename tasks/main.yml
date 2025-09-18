@@ -1,19 +1,19 @@
 ---
-- name: Debug vault variables
+- name: Debug site environment variables
   debug:
     msg:
       - "Environment: {{ env }}"
-      - "Email var: levcharity_portal_api_client_email_{{ env }}"
-      - "Password var: levcharity_portal_api_client_password_{{ env }}"
-      - "Project ID var: levcharity_portal_api_client_id_{{ env }}"
-      - "Email value: {{ vars['levcharity_portal_api_client_email_' + env] | default('NOT_SET') }}"
-      - "Password value: {{ vars['levcharity_portal_api_client_password_' + env] | default('NOT_SET') }}"
-      - "Project ID value: {{ vars['levcharity_portal_api_client_id_' + env] | default('NOT_SET') }}"
+      - "Email var: LEVCHARITY_PORTAL_API_CLIENT_EMAIL_{{ env | upper }}"
+      - "Password var: LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_{{ env | upper }}"
+      - "Project ID var: LEVCHARITY_PORTAL_API_CLIENT_ID_{{ env | upper }}"
+      - "Email value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] | default('NOT_SET') }}"
+      - "Password value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] | default('NOT_SET') }}"
+      - "Project ID value: {{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] | default('NOT_SET') }}"
 
-- name: Check if required vault variables are set
+- name: Check if required environment variables are set
   fail:
-    msg: "Required vault variable 'levcharity_portal_api_client_{{ item }}_{{ env }}' is not set for environment '{{ env }}'"
-  when: vars['levcharity_portal_api_client_' + item + '_' + env] is not defined or vars['levcharity_portal_api_client_' + item + '_' + env] == ""
+    msg: "Required environment variable 'LEVCHARITY_PORTAL_API_CLIENT_{{ item | upper }}_{{ env | upper }}' is not set for environment '{{ env }}'"
+  when: site_env['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] is not defined or site_env['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] == ""
   loop:
     - "email"
     - "password"
@@ -28,8 +28,8 @@
       Content-Type: "application/json"
     body_format: json
     body:
-      email: "{{ vars['levcharity_portal_api_client_email_' + env] }}"
-      password: "{{ vars['levcharity_portal_api_client_password_' + env] }}"
+      email: "{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] }}"
+      password: "{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] }}"
     status_code: 200
     timeout: 30
   register: auth_result
@@ -53,7 +53,7 @@
 
 - name: Get project keys from LevCharity Portal API
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ vars['levcharity_portal_api_client_id_' + env] }}"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}"
     method: GET
     headers:
       Accept: "application/json"
@@ -78,12 +78,12 @@
   debug:
     msg:
       - "Validating key: {{ item }}"
-      - "Looking up value from vault variable: {{ item | upper }}"
-      - "Value found: {{ vars[item | upper] | default('NOT_FOUND') }}"
+      - "Looking up value from environment variable: {{ item | upper }}"
+      - "Value found: {{ site_env[item | upper] | default('NOT_FOUND') }}"
 
 - name: Validate each project key individually
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ vars['levcharity_portal_api_client_id_' + env] }}/validate"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ site_env['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}/validate"
     method: POST
     headers:
       Accept: "application/json"
@@ -92,7 +92,7 @@
     body_format: json
     body:
       key: "{{ item }}"
-      value: "{{ vars[item | upper] | default('') }}"
+      value: "{{ site_env[item | upper] | default('') }}"
     status_code: 200
     timeout: 30
   register: validation_result
