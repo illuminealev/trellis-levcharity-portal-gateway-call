@@ -6,14 +6,14 @@
       - "Email var: LEVCHARITY_PORTAL_API_CLIENT_EMAIL_{{ env | upper }}"
       - "Password var: LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_{{ env | upper }}"
       - "Project ID var: LEVCHARITY_PORTAL_API_CLIENT_ID_{{ env | upper }}"
-      - "Email value: {{ vars['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] | default('NOT_SET') }}"
-      - "Password value: {{ vars['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] | default('NOT_SET') }}"
-      - "Project ID value: {{ vars['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] | default('NOT_SET') }}"
+      - "Email value: {{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper) | default('NOT_SET') }}"
+      - "Password value: {{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper) | default('NOT_SET') }}"
+      - "Project ID value: {{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper) | default('NOT_SET') }}"
 
-- name: Check if required variables are set
+- name: Check if required environment variables are set
   fail:
-    msg: "Required variable 'LEVCHARITY_PORTAL_API_CLIENT_{{ item | upper }}_{{ env | upper }}' is not set for environment '{{ env }}'"
-  when: vars['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] is not defined or vars['LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper] == ""
+    msg: "Required environment variable 'LEVCHARITY_PORTAL_API_CLIENT_{{ item | upper }}_{{ env | upper }}' is not set for environment '{{ env }}'"
+  when: lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_' + item | upper + '_' + env | upper) == ""
   loop:
     - "email"
     - "password"
@@ -28,8 +28,8 @@
       Content-Type: "application/json"
     body_format: json
     body:
-      email: "{{ vars['LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper] }}"
-      password: "{{ vars['LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper] }}"
+      email: "{{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_EMAIL_' + env | upper) }}"
+      password: "{{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_PASSWORD_' + env | upper) }}"
     status_code: 200
     timeout: 30
   register: auth_result
@@ -53,7 +53,7 @@
 
 - name: Get project keys from LevCharity Portal API
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ vars['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper) }}"
     method: GET
     headers:
       Accept: "application/json"
@@ -78,12 +78,12 @@
   debug:
     msg:
       - "Validating key: {{ item }}"
-      - "Looking up value from vault variable: {{ item | upper }}"
-      - "Value found: {{ vars[item | upper] | default('NOT_FOUND') }}"
+      - "Looking up value from environment variable: {{ item | upper }}"
+      - "Value found: {{ lookup('env', item | upper) | default('NOT_FOUND') }}"
 
 - name: Validate each project key individually
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ vars['LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper] }}/validate"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ lookup('env', 'LEVCHARITY_PORTAL_API_CLIENT_ID_' + env | upper) }}/validate"
     method: POST
     headers:
       Accept: "application/json"
@@ -92,7 +92,7 @@
     body_format: json
     body:
       key: "{{ item }}"
-      value: "{{ vars[item | upper] }}"
+      value: "{{ lookup('env', item | upper) }}"
     status_code: 200
     timeout: 30
   register: validation_result
