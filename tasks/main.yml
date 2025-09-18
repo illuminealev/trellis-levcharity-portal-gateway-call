@@ -54,6 +54,10 @@
   delay: 5
   failed_when: keys_result.status != 200
 
+- name: Debug API response
+  debug:
+    var: keys_result.json
+
 - name: Set project keys from API response
   set_fact:
     project_keys: "{{ keys_result.json.keys }}"
