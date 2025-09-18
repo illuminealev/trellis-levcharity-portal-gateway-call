@@ -63,20 +63,23 @@
     msg: "Failed to get project keys from LevCharity Portal API"
   when: project_keys is not defined or project_keys | length == 0
 
-- name: Build validation payload for all keys
+- name: Initialize validation list
+  set_fact:
+    validations_list: []
+
+- name: Build validation list for each key
+  set_fact:
+    validations_list: "{{ validations_list + [{'key': item, 'value': site_env[item | upper] | default('')}] }}"
+  loop: "{{ project_keys }}"
+
+- name: Build validation payload
   set_fact:
     validation_payload:
-      validations: "{{ validation_list }}"
-  vars:
-    validation_list: >-
-      [
-      {% for key in project_keys %}
-      {
-        "key": "{{ key }}",
-        "value": "{{ site_env[key | upper] | default('') }}"
-      }{% if not loop.last %},{% endif %}
-      {% endfor %}
-      ]
+      validations: "{{ validations_list }}"
+
+- name: Debug validation payload
+  debug:
+    var: validation_payload
 
 - name: Validate all project keys in single API call
   uri:
