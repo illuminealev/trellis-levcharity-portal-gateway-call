@@ -60,7 +60,7 @@
 
 - name: Set project keys from API response
   set_fact:
-    project_keys: "{{ keys_result.json.keys }}"
+    project_keys: "{{ keys_result.json['keys'] }}"
 
 - name: Verify project keys were received
   fail:
