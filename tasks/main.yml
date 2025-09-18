@@ -13,10 +13,14 @@
     status_code: 200
     timeout: 30
   register: auth_result
-  no_log: true
   retries: 3
   delay: 5
   failed_when: auth_result.status != 200
+
+- name: Debug authentication response
+  debug:
+    msg: "Authentication response status: {{ auth_result.status }}, Response: {{ auth_result.json | default('No JSON response') }}"
+  when: auth_result.status != 200
 
 - name: Set access token from authentication response
   set_fact:
@@ -24,7 +28,7 @@
 
 - name: Verify access token was received
   fail:
-    msg: "Failed to get access token from LevCharity Portal API"
+    msg: "Failed to get access token from LevCharity Portal API. Response: {{ auth_result.json | default('No response data') }}"
   when: access_token is not defined or access_token == ""
 
 - name: Get project keys from LevCharity Portal API
@@ -37,7 +41,6 @@
     status_code: 200
     timeout: 30
   register: keys_result
-  no_log: false
   retries: 3
   delay: 5
   failed_when: keys_result.status != 200
@@ -51,39 +54,31 @@
     msg: "Failed to get project keys from LevCharity Portal API"
   when: project_keys is not defined or project_keys | length == 0
 
-- name: Initialize validation payload
-  set_fact:
-    validation_payload:
-      validations: []
-
-- name: Build validation payload for all keys
-  set_fact:
-    validation_payload:
-      validations: "{{ validation_payload.validations + [{'key': item, 'value': lookup('env', item | upper)}] }}"
-  loop: "{{ project_keys }}"
-
-- name: Validate all project keys at once
+- name: Validate each project key individually
   uri:
-    url: "https://portal.levcharity.com/api/v1/gateway/{{ lookup('env', 'levcharity_portal_api_client_id_' + env) }}/validate/all"
+    url: "https://portal.levcharity.com/api/v1/gateway/{{ lookup('env', 'levcharity_portal_api_client_id_' + env) }}/validate"
     method: POST
     headers:
       Accept: "application/json"
       Content-Type: "application/json"
       Authorization: "Bearer {{ access_token }}"
     body_format: json
-    body: "{{ validation_payload }}"
+    body:
+      key: "{{ item }}"
+      value: "{{ lookup('env', item | upper) }}"
     status_code: 200
     timeout: 30
   register: validation_result
-  no_log: true
   retries: 3
   delay: 5
   failed_when: validation_result.status != 200
+  loop: "{{ project_keys }}"
 
-- name: Check validation result
+- name: Check validation result for each key
   fail:
-    msg: "Key validation failed. Response: {{ validation_result.json | default('No response data') }}"
-  when: validation_result.json.status != "success"
+    msg: "Key validation failed for '{{ item.item }}'. Response: {{ item.json | default('No response data') }}"
+  when: item.json.status != "success"
+  loop: "{{ validation_result.results }}"
 
 - name: Display successful validation message
   debug:
