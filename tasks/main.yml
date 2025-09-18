@@ -67,6 +67,12 @@
   set_fact:
     validations_list: []
 
+- name: Check for missing keys in site_env
+  debug:
+    msg: "WARNING: Key '{{ item }}' not found in site_env. This key will be sent with empty value."
+  when: site_env[item] is not defined or site_env[item] == ""
+  loop: "{{ project_keys }}"
+
 - name: Build validation list for each key
   set_fact:
     validations_list: "{{ validations_list + [{'key': item, 'value': site_env[item] | default('')}] }}"
