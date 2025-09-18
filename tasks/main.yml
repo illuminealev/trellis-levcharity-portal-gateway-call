@@ -1,4 +1,24 @@
 ---
+- name: Debug environment variables
+  debug:
+    msg:
+      - "Environment: {{ env }}"
+      - "Email env var: levcharity_portal_api_client_email_{{ env }}"
+      - "Password env var: levcharity_portal_api_client_password_{{ env }}"
+      - "Project ID env var: levcharity_portal_api_client_id_{{ env }}"
+      - "Email value: {{ lookup('env', 'levcharity_portal_api_client_email_' + env) | default('NOT_SET') }}"
+      - "Password value: {{ lookup('env', 'levcharity_portal_api_client_password_' + env) | default('NOT_SET') }}"
+      - "Project ID value: {{ lookup('env', 'levcharity_portal_api_client_id_' + env) | default('NOT_SET') }}"
+
+- name: Check if required environment variables are set
+  fail:
+    msg: "Required environment variable '{{ item }}' is not set for environment '{{ env }}'"
+  when: lookup('env', item) == ""
+  loop:
+    - "levcharity_portal_api_client_email_{{ env }}"
+    - "levcharity_portal_api_client_password_{{ env }}"
+    - "levcharity_portal_api_client_id_{{ env }}"
+
 - name: Authenticate with LevCharity Portal API
   uri:
     url: "https://portal.levcharity.com/api/v1/auth/token"
