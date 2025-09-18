@@ -54,20 +54,9 @@
   delay: 5
   failed_when: keys_result.status != 200
 
-- name: Debug API response
-  debug:
-    var: keys_result.json
-
 - name: Set project keys from API response
   set_fact:
     project_keys: "{{ keys_result.json['keys'] }}"
-
-- name: Debug project keys
-  debug:
-    msg:
-      - "project_keys defined: {{ project_keys is defined }}"
-      - "project_keys length: {{ project_keys | length if project_keys is defined else 'not defined' }}"
-      - "project_keys value: {{ project_keys | default('not defined') }}"
 
 - name: Verify project keys were received
   fail:
@@ -88,9 +77,6 @@
     validation_payload:
       validations: "{{ validations_list }}"
 
-- name: Debug validation payload
-  debug:
-    var: validation_payload
 
 - name: Validate all project keys in single API call
   uri:
