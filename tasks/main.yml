@@ -62,6 +62,13 @@
   set_fact:
     project_keys: "{{ keys_result.json['keys'] }}"
 
+- name: Debug project keys
+  debug:
+    msg:
+      - "project_keys defined: {{ project_keys is defined }}"
+      - "project_keys length: {{ project_keys | length if project_keys is defined else 'not defined' }}"
+      - "project_keys value: {{ project_keys | default('not defined') }}"
+
 - name: Verify project keys were received
   fail:
     msg: "Failed to get project keys from LevCharity Portal API"
